@@ -4,14 +4,15 @@
 вкой сплайна"""
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Button, TextBox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
+from tkinter import messagebox
 
 # Изначальные точки
 points = np.array([[0, 0], [1, 2], [2, 0], [3, 3], [4, 1]])
 
 
 def parabolic_spline(points):
-    """Генерация параболического сплайна на основе заданных точек."""
     n = len(points)
     spline_points = []
 
@@ -30,71 +31,69 @@ def parabolic_spline(points):
     return np.vstack(spline_points)
 
 
-class SplineEditor:
+class SplineEditor(tk.Tk):
     def __init__(self):
-        self.fig, self.ax = plt.subplots()
-        self.ax.set_title('Параболический сплайн')
-        self.ax.set_xlim(-10, 10)
-        self.ax.set_ylim(-10, 10)
-        self.points_plot, = self.ax.plot([], [], 'ro-')  # Точки ломаной
-        self.spline_plot, = self.ax.plot([], [], 'b-')  # Сплайн
+        super().__init__()
+        self.title("Параболический сплайн")
+
+        self.fig, self.ax = plt.subplots(figsize=(5, 4))
+        self.canvas = FigureCanvasTkAgg(self.fig, self)
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        self.points_plot, = self.ax.plot([], [], 'ro-')
+        self.spline_plot, = self.ax.plot([], [], 'b-')
 
         self.text_boxes = []
         for i in range(5):
-            ax_text = plt.axes([0.1, 1 - i * 0.1, 0.03, 0.03])
-            text_box = TextBox(ax_text, f'Point {i + 1} (x,y)', initial=f'{points[i][0]},{points[i][1]}')
-            self.text_boxes.append(text_box)
+            entry = tk.Entry(self)
+            entry.insert(0, f'{points[i][0]},{points[i][1]}')
+            entry.pack(pady=5)
+            self.text_boxes.append(entry)
 
-        # Кнопка для обновления
-        self.update_button_ax = plt.axes([0.81, 0.9, 0.15, 0.05])
-        self.update_button = Button(self.update_button_ax, 'Update Points')
-        self.update_button.on_clicked(self.update_points)
+        button_frame = tk.Frame(self)
+        button_frame.pack(pady=10)
 
-        # Кнопка для отрисовки ломанной
-        self.line_button_ax = plt.axes([0.81, 0.75, 0.15, 0.05])
-        self.line_button = Button(self.line_button_ax, 'Draw Line')
-        self.line_button.on_clicked(self.draw_line)
+        update_button = tk.Button(button_frame, text="Update Points", command=self.update_points)
+        update_button.grid(row=0, column=0, padx=5)
 
-        # Кнопка для отрисовки сплайна
-        self.spline_button_ax = plt.axes([0.81, 0.6, 0.15, 0.05])
-        self.spline_button = Button(self.spline_button_ax, 'Draw Spline')
-        self.spline_button.on_clicked(self.draw_spline)
+        line_button = tk.Button(button_frame, text="Draw Line", command=self.draw_line)
+        line_button.grid(row=0, column=1, padx=5)
+
+        spline_button = tk.Button(button_frame, text="Draw Spline", command=self.draw_spline)
+        spline_button.grid(row=0, column=2, padx=5)
 
         self.update_plots()
 
     def update_plots(self):
-        """Обновление отображаемых графиков."""
         self.points_plot.set_data(points[:, 0], points[:, 1])
         self.ax.relim()
         self.ax.autoscale_view()
-        plt.draw()
+        self.canvas.draw()
 
-    def update_points(self, event):
-        """Обновление точек ломаной из текстовых полей."""
+    def update_points(self):
         global points
         try:
             new_points = []
-            for text_box in self.text_boxes:
-                x, y = map(float, text_box.text.split(','))
+            for entry in self.text_boxes:
+                x, y = map(float, entry.get().split(','))
                 new_points.append((x, y))
             points = np.array(new_points)
             self.update_plots()
         except ValueError:
-            print("Ошибка ввода. Пожалуйста, используйте формат (x,y).")
+            messagebox.showerror("Ошибка ввода", "Пожалуйста, используйте формат (x,y).")
 
-    def draw_line(self, event):
-        """Отрисовка ломаной."""
+    def draw_line(self):
         self.points_plot.set_data(points[:, 0], points[:, 1])
         self.update_plots()
 
-    def draw_spline(self, event):
-        """Отрисовка сплайна."""
+    def draw_spline(self):
         spline_points = parabolic_spline(points)
         self.spline_plot.set_data(spline_points[:, 0], spline_points[:, 1])
         self.update_plots()
 
 
 if __name__ == '__main__':
-    editor = SplineEditor()
-    plt.show()
+    app = SplineEditor()
+    app.mainloop()
+
 

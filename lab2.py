@@ -42,6 +42,8 @@ class SplineEditor(tk.Tk):
 
         self.points_plot, = self.ax.plot([], [], 'ro-')
         self.spline_plot, = self.ax.plot([], [], 'b-')
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
 
         self.text_boxes = []
         for i in range(5):
